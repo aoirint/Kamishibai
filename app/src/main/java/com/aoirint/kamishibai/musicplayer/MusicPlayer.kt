@@ -27,16 +27,9 @@ class MusicPlayer private constructor(
     fun setMusicUri(uri: Uri) {
         val oldContext = OnMusicChangedContext(musicUri, musicMetadata)
         musicUri = uri
-        mediaPlayer = MediaPlayer.create(this.context, uri)
+        mediaPlayer = MediaPlayer.create(context, uri)
 
-        val mmr = MediaMetadataRetriever()
-        mmr.setDataSource(context, uri)
-
-        val title = mmr.extractMetadata(METADATA_KEY_TITLE)
-        val album = mmr.extractMetadata(METADATA_KEY_ALBUM)
-        val artist = mmr.extractMetadata(METADATA_KEY_ARTIST)
-
-        musicMetadata = MusicMetadata(title, album, artist)
+        musicMetadata = MusicMetadataUtility.loadMusicMetaDataFromUri(context, uri)
 
         val newContext = OnMusicChangedContext(musicUri, musicMetadata)
         listener.get()?.onMusicChanged(oldContext, newContext)
