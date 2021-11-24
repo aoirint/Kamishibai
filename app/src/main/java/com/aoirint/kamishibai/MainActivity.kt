@@ -23,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.aoirint.kamishibai.musicplayer.MusicPlayer
+import com.aoirint.kamishibai.musicplayer.MusicPlayerListener
 import com.aoirint.kamishibai.ui.theme.KamishibaiTheme
 import kotlinx.coroutines.launch
 
@@ -31,13 +33,23 @@ class MainActivity : ComponentActivity() {
         const val TAG = "MainActivity"
     }
 
-    var musicPlayer: MediaPlayer? = null
+    var musicPlayerListener: MusicPlayerListener? = null
+
+    fun getMusicPlayer(): MusicPlayer {
+        return MusicPlayer.getInstance(this@MainActivity)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             val (musicUri, setMusicUri) = rememberSaveable { mutableStateOf<Uri?>(null) }
+
+            musicPlayerListener = object : MusicPlayerListener {
+                override fun onMusicUriChanged(oldUri: Uri?, newUri: Uri?) {
+                    setMusicUri(newUri)
+                }
+            }
 
             KamishibaiTheme {
                 // A surface container using the 'background' color from the theme
@@ -56,8 +68,10 @@ class MainActivity : ComponentActivity() {
                             SelectMusicButton(onSelected = { fileUri: Uri ->
                                 setMusicUri(fileUri)
 
-                                // TODO: split file
-                                musicPlayer = MediaPlayer.create(this@MainActivity, fileUri)
+                                // TODO: validate uri is music
+                                getMusicPlayer().setMusicUri(fileUri)
+
+                                getMusicPlayer().setListenerAsWeakRef(musicPlayerListener)
                             })
                             Spacer(Modifier.size(8.dp))
                             Text(musicUri?.path ?: "No Selected")
@@ -66,7 +80,7 @@ class MainActivity : ComponentActivity() {
                         Button(
                             onClick = {
                                 Log.d(TAG, "Play Music")
-
+                                getMusicPlayer().start()
                             },
                         ) {
                             Text("Play Music")
@@ -74,8 +88,17 @@ class MainActivity : ComponentActivity() {
                         Spacer(Modifier.size(8.dp))
                         Button(
                             onClick = {
+                                Log.d(TAG, "Pause Music")
+                                getMusicPlayer().pause()
+                            },
+                        ) {
+                            Text("Pause Music")
+                        }
+                        Spacer(Modifier.size(8.dp))
+                        Button(
+                            onClick = {
                                 Log.d(TAG, "Stop Music")
-
+                                getMusicPlayer().stopAndRelease()
                             },
                         ) {
                             Text("Stop Music")
