@@ -21,14 +21,19 @@ class MusicPlayer private constructor(
     private var listener: WeakReference<MusicPlayerListener> = WeakReference(null)
 
     fun setMusicUri(uri: Uri) {
+        val oldUri = musicUri
         musicUri = uri
         mediaPlayer = MediaPlayer.create(this.context, uri)
+
+        listener.get()?.onMusicUriChanged(oldUri, uri)
     }
 
     fun releaseMusic() {
-        listener.get()?.onMusicUriChanged(musicUri, null)
+        val oldUri = musicUri
         musicUri = null
         mediaPlayer = null
+
+        listener.get()?.onMusicUriChanged(oldUri, null)
     }
 
     fun start() {

@@ -66,12 +66,9 @@ class MainActivity : ComponentActivity() {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             SelectMusicButton(onSelected = { fileUri: Uri ->
-                                setMusicUri(fileUri)
-
                                 // TODO: validate uri is music
-                                getMusicPlayer().setMusicUri(fileUri)
-
                                 getMusicPlayer().setListenerAsWeakRef(musicPlayerListener)
+                                getMusicPlayer().setMusicUri(fileUri)
                             })
                             Spacer(Modifier.size(8.dp))
                             Text(musicUri?.path ?: "No Selected")
