@@ -1,11 +1,9 @@
 package com.aoirint.kamishibai.musicregistry
 
-import android.net.Uri
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.time.LocalDateTime
+import java.io.Serializable
 
 @Entity(
     tableName = "music_table",
@@ -22,4 +20,4 @@ data class Music(
     val artist: String?,
     val createdAt: String,
     val updatedAt: String,
-)
+) : Serializable
