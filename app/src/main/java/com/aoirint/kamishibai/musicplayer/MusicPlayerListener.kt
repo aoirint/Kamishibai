@@ -2,6 +2,11 @@ package com.aoirint.kamishibai.musicplayer
 
 import android.net.Uri
 
+data class OnMusicChangedContext(
+    val uri: Uri?,
+    val metadata: MusicMetadata?,
+)
+
 interface MusicPlayerListener {
-    fun onMusicUriChanged(oldUri: Uri?, newUri: Uri?)
+    fun onMusicChanged(oldContext: OnMusicChangedContext?, newContext: OnMusicChangedContext?)
 }
