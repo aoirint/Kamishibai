@@ -1,5 +1,6 @@
 package com.aoirint.kamishibai.musicregistry
 
+import android.database.sqlite.SQLiteConstraintException
 import androidx.lifecycle.*
 import kotlinx.coroutines.launch
 
@@ -8,8 +9,14 @@ class MusicViewModel(
 ) : ViewModel() {
     val allMusics: LiveData<List<Music>> = repository.allMusics.asLiveData()
 
-    fun insert(music: Music) = viewModelScope.launch {
-        repository.insert(music)
+    fun insert(music: Music, callback: (success: Boolean) -> Unit) = viewModelScope.launch {
+        try {
+            repository.insert(music)
+            callback(true)
+        } catch (error: SQLiteConstraintException) {
+            callback(false)
+        }
+
     }
 }
 

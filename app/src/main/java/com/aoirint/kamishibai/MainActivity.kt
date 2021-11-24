@@ -158,7 +158,9 @@ class MainActivity : ComponentActivity() {
                                         updatedAt = LocalDateTime.now().toString(),
                                     )
 
-                                    musicViewModel.insert(music)
+                                    musicViewModel.insert(music) { success ->
+                                        Log.d(TAG, "Success: " + success.toString())
+                                    }
                                 },
                             )
                         }
