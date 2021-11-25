@@ -1,5 +1,6 @@
 package com.aoirint.kamishibai
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -142,7 +143,11 @@ class MainActivity : ComponentActivity() {
                             SelectMusicButton(
                                 title = "Add Music",
                                 onSelected = { fileUri: Uri ->
-                                    // TODO: persistent file access permission
+                                    // Persistence URI Access Permission
+                                    val contentResolver = applicationContext.contentResolver
+                                    val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                                    contentResolver.takePersistableUriPermission(fileUri, takeFlags)
+
                                     // TODO: validate uri is music
                                     val meta = MusicMetadataUtility.loadMusicMetaDataFromUri(this@MainActivity, fileUri)
 
