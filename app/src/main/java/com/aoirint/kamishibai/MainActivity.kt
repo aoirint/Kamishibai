@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Observer
+import com.aoirint.kamishibai.components.MusicList
 import com.aoirint.kamishibai.musicplayer.*
 import com.aoirint.kamishibai.musicregistry.Music
 import com.aoirint.kamishibai.musicregistry.MusicViewModel
@@ -48,7 +50,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val (musicUri, setMusicUri) = rememberSaveable { mutableStateOf<Uri?>(null) }
             val (musicMetadata, setMusicMetadata) = rememberSaveable { mutableStateOf<MusicMetadata?>(null) }
-            val (musics, setMusics) = rememberSaveable { mutableStateOf<List<Music>?>(null) }
+            val (musics, setMusics) = rememberSaveable { mutableStateOf<List<Music>>(emptyList()) }
 
             musicViewModel.allMusics.observe(this@MainActivity, { retMusics ->
                 Log.d(TAG, "musics fetched")
@@ -78,8 +80,11 @@ class MainActivity : ComponentActivity() {
                         ) {
                             SelectMusicButton(
                                 title = "Set Music",
-                                onSelected = { fileUri: Uri ->
+                                onSelected = { fileUris: List<Uri> ->
+                                    val fileUri = fileUris.first()
+
                                     // TODO: validate uri is music
+                                    musicPlayer.stopAndRelease()
                                     musicPlayer.setListenerAsWeakRef(musicPlayerListener)
                                     musicPlayer.setMusicUri(fileUri)
                                 },
@@ -142,34 +147,46 @@ class MainActivity : ComponentActivity() {
                         ) {
                             SelectMusicButton(
                                 title = "Add Music",
-                                onSelected = { fileUri: Uri ->
-                                    // Persistence URI Access Permission
-                                    val contentResolver = applicationContext.contentResolver
-                                    val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                                    contentResolver.takePersistableUriPermission(fileUri, takeFlags)
+                                multiple = true,
+                                onSelected = { fileUris: List<Uri> ->
+                                    fileUris.forEach { fileUri ->
+                                        // Persistence URI Access Permission
+                                        val contentResolver = applicationContext.contentResolver
+                                        val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                                        contentResolver.takePersistableUriPermission(fileUri, takeFlags)
 
-                                    // TODO: validate uri is music
-                                    val meta = MusicMetadataUtility.loadMusicMetaDataFromUri(this@MainActivity, fileUri)
+                                        // TODO: validate uri is music
+                                        val meta = MusicMetadataUtility.loadMusicMetaDataFromUri(this@MainActivity, fileUri)
 
-                                    val music = Music(
-                                        id = 0,
-                                        uri = fileUri.toString(),
-                                        title = meta.title,
-                                        album = meta.album,
-                                        artist = meta.artist,
-                                        createdAt = LocalDateTime.now().toString(),
-                                        updatedAt = LocalDateTime.now().toString(),
-                                    )
+                                        val music = Music(
+                                            id = 0,
+                                            uri = fileUri.toString(),
+                                            title = meta.title,
+                                            album = meta.album,
+                                            artist = meta.artist,
+                                            createdAt = LocalDateTime.now().toString(),
+                                            updatedAt = LocalDateTime.now().toString(),
+                                        )
 
-                                    musicViewModel.insert(music) { success ->
-                                        Log.d(TAG, "Success: " + success.toString())
+                                        musicViewModel.insert(music) { success ->
+                                            Log.d(TAG, "Success: $success")
+                                        }
                                     }
                                 },
                             )
                         }
-                        musics?.map { music ->
-                            Spacer(Modifier.size(8.dp))
-                            Text(music.title ?: "")
+                        Column(modifier = Modifier.height(140.dp)) {
+                            MusicList(
+                                musics = musics,
+                                onClick = { music ->
+                                    Log.d(TAG, "Clicked: ${music.title}")
+                                    val musicUri = Uri.parse(music.uri)
+
+                                    musicPlayer.stopAndRelease()
+                                    musicPlayer.setListenerAsWeakRef(musicPlayerListener)
+                                    musicPlayer.setMusicUri(musicUri)
+                                },
+                            )
                         }
                     }
                 }
@@ -179,17 +196,31 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun SelectMusicButton(title: String, onSelected: (fileUri: Uri) -> Unit) {
-    val selectMusic = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { fileUri: Uri ->
-        onSelected(fileUri)
+fun SelectMusicButton(
+    title: String,
+    multiple: Boolean = false,
+    onSelected: (fileUris: List<Uri>) -> Unit
+) {
+    val selectMusic = if (multiple) {
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenMultipleDocuments()
+        ) { fileUris: List<Uri> ->
+            onSelected(fileUris)
+        }
+    } else {
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocument()
+        ) { fileUri: Uri? ->
+            if (fileUri != null) {
+                onSelected(listOf(fileUri))
+            }
+        }
     }
 
     Button(
         onClick = {
             Log.d(MainActivity.TAG, "Select Music")
-            selectMusic.launch("audio/*")
+            selectMusic.launch(arrayOf("audio/*"))
         },
     ) {
         Text(title)
