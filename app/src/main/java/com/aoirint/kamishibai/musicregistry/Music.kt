@@ -1,9 +1,10 @@
 package com.aoirint.kamishibai.musicregistry
 
-import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
-import java.io.Serializable
+import android.net.Uri
+import android.os.Parcelable
+import androidx.room.*
+import kotlinx.parcelize.Parcelize
+import java.time.ZonedDateTime
 
 @Entity(
     tableName = "music_table",
@@ -11,13 +12,16 @@ import java.io.Serializable
         Index(value = ["uri"], unique = true)
     ],
 )
+@Parcelize
 data class Music(
     @PrimaryKey(autoGenerate = true)
     val id: Long,
-    val uri: String,
+    val uri: Uri,
     val title: String?,
     val album: String?,
     val artist: String?,
-    val createdAt: String,
-    val updatedAt: String,
-) : Serializable
+    val color: Int?,
+    val lastModified: ZonedDateTime,
+    val createdAt: ZonedDateTime,
+    val updatedAt: ZonedDateTime,
+) : Parcelable

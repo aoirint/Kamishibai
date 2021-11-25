@@ -1,12 +1,16 @@
 package com.aoirint.kamishibai.musicplayer
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.net.Uri
 import java.lang.ref.WeakReference
 
 import android.media.MediaMetadataRetriever.*;
+import com.aoirint.kamishibai.KamishibaiApp
+import com.aoirint.kamishibai.musicregistry.Music
+import com.aoirint.kamishibai.utility.ArtworkCacheManager
 
 class MusicPlayer private constructor(
     private val context: Context
@@ -20,24 +24,36 @@ class MusicPlayer private constructor(
     }
 
     private var mediaPlayer: MediaPlayer? = null
-    private var musicUri: Uri? = null
-    private var musicMetadata: MusicMetadata? = null
+    private var music: Music? = null
+    private var artwork: Bitmap? = null
     private var listener: WeakReference<MusicPlayerListener> = WeakReference(null)
 
-    fun setMusicUri(uri: Uri) {
-        val oldContext = OnMusicChangedContext(musicUri, musicMetadata)
-        musicUri = uri
-        mediaPlayer = MediaPlayer.create(context, uri)
+    val artworkCacheManager: ArtworkCacheManager
+        get() = (context.applicationContext as KamishibaiApp).artworkCacheManager
 
-        musicMetadata = MusicMetadataUtility.loadMusicMetaDataFromUri(context, uri)
+    val isPlaying: Boolean
+        get() = mediaPlayer?.isPlaying ?: false
 
-        val newContext = OnMusicChangedContext(musicUri, musicMetadata)
-        listener.get()?.onMusicChanged(oldContext, newContext)
+    val currentMusic: Music?
+        get() = music
+
+    val currentArtwork: Bitmap?
+        get() = artwork
+
+    fun setMusic(music: Music) {
+        val oldContext = currentMusic
+
+        this.music = music
+        this.artwork = artworkCacheManager.loadOrCreate(music.uri)
+
+        mediaPlayer = MediaPlayer.create(context, music.uri)
+
+        listener.get()?.onMusicChanged(oldContext, music)
     }
 
     fun releaseMusic() {
-        val oldContext = OnMusicChangedContext(musicUri, musicMetadata)
-        musicUri = null
+        val oldContext = currentMusic
+        music = null
         mediaPlayer = null
 
         listener.get()?.onMusicChanged(oldContext, null)

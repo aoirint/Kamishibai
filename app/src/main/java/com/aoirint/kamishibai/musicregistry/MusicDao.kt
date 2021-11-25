@@ -11,6 +11,9 @@ interface MusicDao {
     @Query("SELECT * FROM music_table ORDER BY createdAt DESC")
     fun getMusicsOrderByCreatedAt(): Flow<List<Music>>
 
+    @Query("SELECT * FROM music_table WHERE id = :musicId")
+    fun getMusic(musicId: Long): Flow<Music?>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(music: Music)
 

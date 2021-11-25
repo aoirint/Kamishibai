@@ -5,12 +5,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -22,7 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Observer
+import com.aoirint.kamishibai.utility.UriUtility
 import com.aoirint.kamishibai.components.MusicList
 import com.aoirint.kamishibai.components.SelectMusicButton
 import com.aoirint.kamishibai.musicplayer.*
@@ -30,7 +27,8 @@ import com.aoirint.kamishibai.musicregistry.Music
 import com.aoirint.kamishibai.musicregistry.MusicViewModel
 import com.aoirint.kamishibai.musicregistry.MusicViewModelFactory
 import com.aoirint.kamishibai.ui.theme.KamishibaiTheme
-import java.time.LocalDateTime
+import com.aoirint.kamishibai.utility.BitmapUtility
+import java.time.ZonedDateTime
 
 class MainActivity : ComponentActivity() {
     companion object {
@@ -43,14 +41,13 @@ class MainActivity : ComponentActivity() {
 
     var musicPlayerListener: MusicPlayerListener? = null
     val musicPlayer: MusicPlayer
-        get() = MusicPlayer.getInstance(this@MainActivity)
+        get() = (application as KamishibaiApp).musicPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val (musicUri, setMusicUri) = rememberSaveable { mutableStateOf<Uri?>(null) }
-            val (musicMetadata, setMusicMetadata) = rememberSaveable { mutableStateOf<MusicMetadata?>(null) }
+            val (music, setMusic) = rememberSaveable { mutableStateOf<Music?>(null) }
             val (musics, setMusics) = rememberSaveable { mutableStateOf<List<Music>>(emptyList()) }
 
             musicViewModel.allMusics.observe(this@MainActivity, { retMusics ->
@@ -59,9 +56,9 @@ class MainActivity : ComponentActivity() {
             })
 
             musicPlayerListener = object : MusicPlayerListener {
-                override fun onMusicChanged(oldContext: OnMusicChangedContext?, newContext: OnMusicChangedContext?) {
-                    setMusicUri(newContext?.uri)
-                    setMusicMetadata(newContext?.metadata)
+                override fun onMusicChanged(oldContext: Music?, newContext: Music?) {
+                    setMusic(newContext)
+                    (application as KamishibaiApp).sendUpdateNotification()
                 }
             }
 
@@ -79,25 +76,16 @@ class MainActivity : ComponentActivity() {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            SelectMusicButton(
-                                title = "Set Music",
-                                onSelected = { fileUris: List<Uri> ->
-                                    val fileUri = fileUris.first()
-
-                                    // TODO: validate uri is music
-                                    musicPlayer.stopAndRelease()
-                                    musicPlayer.setListenerAsWeakRef(musicPlayerListener)
-                                    musicPlayer.setMusicUri(fileUri)
-                                },
-                            )
+                            Text("Music")
                             Spacer(Modifier.size(8.dp))
-                            Text(musicUri?.path ?: "No Selected")
+                            Text(music?.title ?: "No Selected")
                         }
                         Spacer(Modifier.size(8.dp))
                         Button(
                             onClick = {
                                 Log.d(TAG, "Play Music")
                                 musicPlayer.start()
+                                (application as KamishibaiApp).sendUpdateNotification()
                             },
                         ) {
                             Text("Play Music")
@@ -107,6 +95,7 @@ class MainActivity : ComponentActivity() {
                             onClick = {
                                 Log.d(TAG, "Pause Music")
                                 musicPlayer.pause()
+                                (application as KamishibaiApp).sendUpdateNotification()
                             },
                         ) {
                             Text("Pause Music")
@@ -116,6 +105,7 @@ class MainActivity : ComponentActivity() {
                             onClick = {
                                 Log.d(TAG, "Stop Music")
                                 musicPlayer.stopAndRelease()
+                                (application as KamishibaiApp).sendUpdateNotification()
                             },
                         ) {
                             Text("Stop Music")
@@ -126,21 +116,21 @@ class MainActivity : ComponentActivity() {
                         ) {
                             Text("Title")
                             Spacer(Modifier.size(8.dp))
-                            Text(musicMetadata?.title ?: "")
+                            Text(music?.title ?: "")
                         }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text("Album")
                             Spacer(Modifier.size(8.dp))
-                            Text(musicMetadata?.album ?: "")
+                            Text(music?.album ?: "")
                         }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text("Artist")
                             Spacer(Modifier.size(8.dp))
-                            Text(musicMetadata?.artist ?: "")
+                            Text(music?.artist ?: "")
                         }
                         Spacer(Modifier.size(8.dp))
                         Row(
@@ -158,15 +148,21 @@ class MainActivity : ComponentActivity() {
 
                                         // TODO: validate uri is music
                                         val meta = MusicMetadataUtility.loadMusicMetaDataFromUri(this@MainActivity, fileUri)
+                                        val lastModified = UriUtility.queryLastModified(this@MainActivity, fileUri)
+
+                                        val artwork = (application as KamishibaiApp).artworkCacheManager.loadOrCreate(fileUri)
+                                        val commonColor = artwork?.let { BitmapUtility.extractCommonColor(artwork) }
 
                                         val music = Music(
                                             id = 0,
-                                            uri = fileUri.toString(),
+                                            uri = fileUri,
                                             title = meta.title,
                                             album = meta.album,
                                             artist = meta.artist,
-                                            createdAt = LocalDateTime.now().toString(),
-                                            updatedAt = LocalDateTime.now().toString(),
+                                            color = commonColor,
+                                            lastModified = lastModified,
+                                            createdAt = ZonedDateTime.now(),
+                                            updatedAt = ZonedDateTime.now(),
                                         )
 
                                         musicViewModel.insert(music) { success ->
@@ -181,11 +177,10 @@ class MainActivity : ComponentActivity() {
                                 musics = musics,
                                 onClick = { music ->
                                     Log.d(TAG, "Clicked: ${music.title}")
-                                    val musicUri = Uri.parse(music.uri)
 
                                     musicPlayer.stopAndRelease()
                                     musicPlayer.setListenerAsWeakRef(musicPlayerListener)
-                                    musicPlayer.setMusicUri(musicUri)
+                                    musicPlayer.setMusic(music)
                                 },
                             )
                         }
