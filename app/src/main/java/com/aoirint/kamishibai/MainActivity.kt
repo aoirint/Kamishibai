@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Observer
 import com.aoirint.kamishibai.components.MusicList
+import com.aoirint.kamishibai.components.SelectMusicButton
 import com.aoirint.kamishibai.musicplayer.*
 import com.aoirint.kamishibai.musicregistry.Music
 import com.aoirint.kamishibai.musicregistry.MusicViewModel
@@ -192,38 +193,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun SelectMusicButton(
-    title: String,
-    multiple: Boolean = false,
-    onSelected: (fileUris: List<Uri>) -> Unit
-) {
-    val selectMusic = if (multiple) {
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.OpenMultipleDocuments()
-        ) { fileUris: List<Uri> ->
-            onSelected(fileUris)
-        }
-    } else {
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.OpenDocument()
-        ) { fileUri: Uri? ->
-            if (fileUri != null) {
-                onSelected(listOf(fileUri))
-            }
-        }
-    }
-
-    Button(
-        onClick = {
-            Log.d(MainActivity.TAG, "Select Music")
-            selectMusic.launch(arrayOf("audio/*"))
-        },
-    ) {
-        Text(title)
     }
 }
 
