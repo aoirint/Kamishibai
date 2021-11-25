@@ -38,10 +38,8 @@ class MainActivity : ComponentActivity() {
     }
 
     var musicPlayerListener: MusicPlayerListener? = null
-
-    fun getMusicPlayer(): MusicPlayer {
-        return MusicPlayer.getInstance(this@MainActivity)
-    }
+    val musicPlayer: MusicPlayer
+        get() = MusicPlayer.getInstance(this@MainActivity)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,8 +79,8 @@ class MainActivity : ComponentActivity() {
                                 title = "Set Music",
                                 onSelected = { fileUri: Uri ->
                                     // TODO: validate uri is music
-                                    getMusicPlayer().setListenerAsWeakRef(musicPlayerListener)
-                                    getMusicPlayer().setMusicUri(fileUri)
+                                    musicPlayer.setListenerAsWeakRef(musicPlayerListener)
+                                    musicPlayer.setMusicUri(fileUri)
                                 },
                             )
                             Spacer(Modifier.size(8.dp))
@@ -92,7 +90,7 @@ class MainActivity : ComponentActivity() {
                         Button(
                             onClick = {
                                 Log.d(TAG, "Play Music")
-                                getMusicPlayer().start()
+                                musicPlayer.start()
                             },
                         ) {
                             Text("Play Music")
@@ -101,7 +99,7 @@ class MainActivity : ComponentActivity() {
                         Button(
                             onClick = {
                                 Log.d(TAG, "Pause Music")
-                                getMusicPlayer().pause()
+                                musicPlayer.pause()
                             },
                         ) {
                             Text("Pause Music")
@@ -110,7 +108,7 @@ class MainActivity : ComponentActivity() {
                         Button(
                             onClick = {
                                 Log.d(TAG, "Stop Music")
-                                getMusicPlayer().stopAndRelease()
+                                musicPlayer.stopAndRelease()
                             },
                         ) {
                             Text("Stop Music")
