@@ -71,8 +71,6 @@ class MainActivity : ComponentActivity() {
                             .fillMaxWidth(),
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        Greeting("Android")
-                        Spacer(Modifier.size(8.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -188,18 +186,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    KamishibaiTheme {
-        Greeting("Android")
     }
 }
