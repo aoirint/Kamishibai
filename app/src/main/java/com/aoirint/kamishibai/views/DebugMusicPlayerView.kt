@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.Text
@@ -49,112 +48,121 @@ fun DebugMusicPlayerView(
         }
     }
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("Music")
-        Spacer(Modifier.size(8.dp))
-        Text(music?.title ?: "No Selected")
-    }
-    Spacer(Modifier.size(8.dp))
-    Button(
-        onClick = {
-            Log.d(MainActivity.TAG, "Play Music")
-            musicPlayer.start()
-        },
-    ) {
-        Text("Play Music")
-    }
-    Spacer(Modifier.size(8.dp))
-    Button(
-        onClick = {
-            Log.d(MainActivity.TAG, "Pause Music")
-            musicPlayer.pause()
-        },
-    ) {
-        Text("Pause Music")
-    }
-    Spacer(Modifier.size(8.dp))
-    Button(
-        onClick = {
-            Log.d(MainActivity.TAG, "Stop Music")
-            musicPlayer.stopAndRelease()
-        },
-    ) {
-        Text("Stop Music")
-    }
-    Spacer(Modifier.size(8.dp))
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("Title")
-        Spacer(Modifier.size(8.dp))
-        Text(music?.title ?: "")
-    }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("Album")
-        Spacer(Modifier.size(8.dp))
-        Text(music?.album ?: "")
-    }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("Artist")
-        Spacer(Modifier.size(8.dp))
-        Text(music?.artist ?: "")
-    }
-    Spacer(Modifier.size(8.dp))
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        SelectMusicButton(
-            title = "Add Music",
-            multiple = true,
-            onSelected = { fileUris: List<Uri> ->
-                fileUris.forEach { fileUri ->
-                    // Persistence URI Access Permission
-                    val contentResolver = context.contentResolver
-                    val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                    contentResolver.takePersistableUriPermission(fileUri, takeFlags)
 
-                    // TODO: validate uri is music
-                    val meta = MusicMetadataUtility.loadMusicMetaDataFromUri(context, fileUri)
-                    val lastModified = UriUtility.queryLastModified(context, fileUri)
+    Column(
+        Modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.Center,
+    ) {
 
-                    val artwork = (context.applicationContext as KamishibaiApp).artworkCacheManager.loadOrCreate(fileUri)
-                    val commonColor = artwork?.let { BitmapUtility.extractCommonColor(artwork) }
-
-                    val music = Music(
-                        id = 0,
-                        uri = fileUri,
-                        title = meta.title,
-                        album = meta.album,
-                        artist = meta.artist,
-                        color = commonColor,
-                        lastModified = lastModified,
-                        createdAt = ZonedDateTime.now(),
-                        updatedAt = ZonedDateTime.now(),
-                    )
-
-                    musicViewModel.insert(music) { success ->
-                        Log.d(MainActivity.TAG, "Success: $success")
-                    }
-                }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Music")
+            Spacer(Modifier.size(8.dp))
+            Text(music?.title ?: "No Selected")
+        }
+        Spacer(Modifier.size(8.dp))
+        Button(
+            onClick = {
+                Log.d(MainActivity.TAG, "Play Music")
+                musicPlayer.start()
             },
-        )
-    }
-    Column(modifier = Modifier.height(140.dp)) {
-        MusicList(
-            musics = musics.value ?: emptyList(),
-            onClick = { music ->
-                Log.d(MainActivity.TAG, "Clicked: ${music.title}")
-
+        ) {
+            Text("Play Music")
+        }
+        Spacer(Modifier.size(8.dp))
+        Button(
+            onClick = {
+                Log.d(MainActivity.TAG, "Pause Music")
+                musicPlayer.pause()
+            },
+        ) {
+            Text("Pause Music")
+        }
+        Spacer(Modifier.size(8.dp))
+        Button(
+            onClick = {
+                Log.d(MainActivity.TAG, "Stop Music")
                 musicPlayer.stopAndRelease()
-                musicPlayer.setListenerAsWeakRef(musicPlayerListener)
-                musicPlayer.setMusic(music)
             },
-        )
+        ) {
+            Text("Stop Music")
+        }
+        Spacer(Modifier.size(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Title")
+            Spacer(Modifier.size(8.dp))
+            Text(music?.title ?: "")
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Album")
+            Spacer(Modifier.size(8.dp))
+            Text(music?.album ?: "")
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Artist")
+            Spacer(Modifier.size(8.dp))
+            Text(music?.artist ?: "")
+        }
+        Spacer(Modifier.size(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SelectMusicButton(
+                title = "Add Music",
+                multiple = true,
+                onSelected = { fileUris: List<Uri> ->
+                    fileUris.forEach { fileUri ->
+                        // Persistence URI Access Permission
+                        val contentResolver = context.contentResolver
+                        val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                        contentResolver.takePersistableUriPermission(fileUri, takeFlags)
+
+                        // TODO: validate uri is music
+                        val meta = MusicMetadataUtility.loadMusicMetaDataFromUri(context, fileUri)
+                        val lastModified = UriUtility.queryLastModified(context, fileUri)
+
+                        val artwork = (context.applicationContext as KamishibaiApp).artworkCacheManager.loadOrCreate(fileUri)
+                        val commonColor = artwork?.let { BitmapUtility.extractCommonColor(artwork) }
+
+                        val music = Music(
+                            id = 0,
+                            uri = fileUri,
+                            title = meta.title,
+                            album = meta.album,
+                            artist = meta.artist,
+                            color = commonColor,
+                            lastModified = lastModified,
+                            createdAt = ZonedDateTime.now(),
+                            updatedAt = ZonedDateTime.now(),
+                        )
+
+                        musicViewModel.insert(music) { success ->
+                            Log.d(MainActivity.TAG, "Success: $success")
+                        }
+                    }
+                },
+            )
+        }
+        Column(modifier = Modifier.height(140.dp)) {
+            MusicList(
+                musics = musics.value ?: emptyList(),
+                onClick = { music ->
+                    Log.d(MainActivity.TAG, "Clicked: ${music.title}")
+
+                    musicPlayer.stopAndRelease()
+                    musicPlayer.setListenerAsWeakRef(musicPlayerListener)
+                    musicPlayer.setMusic(music)
+                },
+            )
+        }
     }
 }
