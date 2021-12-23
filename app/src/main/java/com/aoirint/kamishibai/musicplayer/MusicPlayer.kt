@@ -61,15 +61,19 @@ class MusicPlayer private constructor(
 
     fun start() {
         mediaPlayer?.start()
+
+        (context.applicationContext as KamishibaiApp).sendUpdateNotification()
     }
 
     fun stopAndRelease() {
         mediaPlayer?.stop()
         releaseMusic()
+        (context.applicationContext as KamishibaiApp).sendUpdateNotification()
     }
 
     fun pause() {
         mediaPlayer?.pause()
+        (context.applicationContext as KamishibaiApp).sendUpdateNotification()
     }
 
     fun setListenerAsWeakRef(listener: MusicPlayerListener?) {
