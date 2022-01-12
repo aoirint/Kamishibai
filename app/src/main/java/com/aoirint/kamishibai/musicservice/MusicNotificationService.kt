@@ -3,7 +3,12 @@ package com.aoirint.kamishibai.musicservice
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.media.MediaMetadata
+import android.media.session.MediaSession
 import android.os.*
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.core.app.NotificationCompat
@@ -20,11 +25,23 @@ class MusicNotificationService: Service() {
     }
 
     var messenger: Messenger? = null
+    var mediaSession: MediaSessionCompat? = null
+    var mediaSessionToken: MediaSessionCompat.Token? = null
+
+    class MediaSessionCallback: MediaSessionCompat.Callback() {
+    }
 
     override fun onCreate() {
         super.onCreate()
 
         messenger = Messenger(IncomingHandler(this))
+        mediaSession = MediaSessionCompat(this, TAG)
+
+        mediaSession?.let { mediaSession ->
+            mediaSessionToken = mediaSession.sessionToken
+
+            mediaSession.setCallback(MediaSessionCallback())
+        }
     }
 
     override fun onBind(p0: Intent?): IBinder? {
@@ -173,6 +190,33 @@ class MusicNotificationService: Service() {
     fun updateNotification() {
         val notification = createBuilder().build()
         startForeground(1, notification)
+
+        val musicPlayer = (application as KamishibaiApp).musicPlayer
+        val music = musicPlayer.currentMusic
+        val artworkCacheManager = (application as KamishibaiApp).artworkCacheManager
+        val artwork = music?.uri?.let { artworkCacheManager.loadOrCreate(it) }
+
+        val builder = MediaMetadataCompat.Builder()
+        builder.putString(MediaMetadata.METADATA_KEY_TITLE, music?.title)
+
+        artwork?.let { builder.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, it) }
+
+        mediaSession?.setMetadata(builder.build())
+
+
+        val stateBuilder = PlaybackStateCompat.Builder()
+        stateBuilder.setActions(
+            PlaybackStateCompat.ACTION_PLAY
+            or PlaybackStateCompat.ACTION_PLAY_PAUSE
+            or PlaybackStateCompat.ACTION_PAUSE
+            or PlaybackStateCompat.ACTION_REWIND
+            or PlaybackStateCompat.ACTION_FAST_FORWARD
+        )
+
+        mediaSession?.let { mediaSession ->
+            mediaSession.setPlaybackState(stateBuilder.build())
+            mediaSession.isActive = true
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
