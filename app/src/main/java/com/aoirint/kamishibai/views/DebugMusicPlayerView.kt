@@ -128,7 +128,7 @@ fun DebugMusicPlayerView(
 
                         // TODO: validate uri is music
                         val meta = MusicMetadataUtility.loadMusicMetaDataFromUri(context, fileUri)
-                        val lastModified = UriUtility.queryLastModified(context, fileUri)
+                        val fileLastModified = UriUtility.queryLastModified(context, fileUri)
 
                         val artwork = (context.applicationContext as KamishibaiApp).artworkCacheManager.loadOrCreate(fileUri)
                         val commonColor = artwork?.let { BitmapUtility.extractCommonColor(artwork) }
@@ -140,7 +140,7 @@ fun DebugMusicPlayerView(
                             album = meta.album,
                             artist = meta.artist,
                             color = commonColor,
-                            lastModified = lastModified,
+                            fileLastModified = fileLastModified,
                             createdAt = ZonedDateTime.now(),
                             updatedAt = ZonedDateTime.now(),
                         )

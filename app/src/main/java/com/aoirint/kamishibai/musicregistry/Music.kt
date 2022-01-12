@@ -21,7 +21,7 @@ data class Music(
     val album: String?,
     val artist: String?,
     val color: Int?,
-    val lastModified: ZonedDateTime,
+    val fileLastModified: ZonedDateTime,
     val createdAt: ZonedDateTime,
     val updatedAt: ZonedDateTime,
 ) : Parcelable
